@@ -1,34 +1,30 @@
 package main
 
 import (
-	"fmt"
 	"log"
+	"time"
 
 	"guthub.com/sainikhil1258/DFS/p2p"
 )
 
-func OnPeer(peer p2p.Peer) error {
-	// fmt.Println("doing some logic with the peeer outside of TCPTransport")
-	peer.Close()
-	return nil
-}
 func main() {
-	tcpOpts := p2p.TCPTransportOpts{
+	tcptransportOpts := p2p.TCPTransportOpts{
 		ListenAddr:    ":3000",
-		Decoder:       p2p.DefaultDecoder{},
 		HandshakeFunc: p2p.NOPHandshakeFunc,
-		OnPeer:        OnPeer,
+		Decoder:       p2p.DefaultDecoder{},
 	}
-	tr := p2p.NewTCPTransport(tcpOpts)
+	tcpTransport := p2p.NewTCPTransport(tcptransportOpts)
+	FileServerOpts := FileServerOpts{
+		StorgaeRoot:       "3000_network",
+		PathTransformFunc: CASPathTransformFunc,
+		Transport:         tcpTransport,
+	}
+	s := NewFileServer(FileServerOpts)
 	go func() {
-		for {
-			msg := <-tr.Consume()
-			fmt.Printf("%+v\n", msg)
-		}
+		time.Sleep(time.Second * 3)
+		s.Stop()
 	}()
-	if err := tr.ListenAndAccept(); err != nil {
+	if err := s.Start(); err != nil {
 		log.Fatal(err)
 	}
-	// fmt.Println("Hello raa poookaaa")
-	select {}
 }
