@@ -72,6 +72,7 @@ func (s *FileServer) broadcast(msg *Message) error {
 		return err
 	}
 	for _, peer := range s.peers {
+		peer.Send([]byte{p2p.IncomingMessage})
 		if err := peer.Send(buf.Bytes()); err != nil {
 			return err
 		}
@@ -128,9 +129,10 @@ func (s *FileServer) Store(key string, r io.Reader) error {
 	if err := s.broadcast(&msg); err != nil {
 		return err
 	}
-	time.Sleep(time.Second * 3)
+	time.Sleep(time.Millisecond * 5)
 	// payload := []byte("THIS IS A LARGE FILE")
 	for _, peer := range s.peers {
+		peer.Send([]byte{p2p.IncomingStream})
 		n, err := io.Copy(peer, fileBuffer)
 		if err != nil {
 			return err
@@ -246,8 +248,9 @@ func (s *FileServer) handleMessageStoreFile(from string, msg MessageStoreFile) e
 	if err != nil {
 		return err
 	}
-	fmt.Println("written %d bytes to disk:", n)
-	peer.(*p2p.TCPPeer).Wg.Done()
+	fmt.Printf("[%s] written %d bytes to disk\n", s.Transport.Addr(), n)
+	// peer.(*p2p.TCPPeer).Wg.Done()
+	peer.CloseStream()
 	return nil
 }
 
